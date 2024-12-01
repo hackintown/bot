@@ -19,8 +19,12 @@ const verifyUserInChannel = async (telegramId) => {
   }
 };
 
-const generateSpinResult = () => {
-  return Math.floor(Math.random() * 30) + 10; // Random amount between 10 and 40
+const generateSpinResult = (remainingSpins) => {
+  const maxPossible = 90 - remainingSpins * 20;
+  const minPossible = 60 - remainingSpins * 15;
+  return (
+    Math.floor(Math.random() * (maxPossible - minPossible + 1)) + minPossible
+  );
 };
 
 module.exports = { verifyUserInChannel, generateSpinResult };
