@@ -1,5 +1,5 @@
 const express = require('express');
-const TelegramBot = require('node-telegram-bot-api');
+const { Telegraf } = require('telegraf');
 const config = require('./config/config');
 const connectToDatabase = require('./database/connection');
 const handleStart = require('./handlers/startHandler');
@@ -19,46 +19,38 @@ async function startServer() {
       res.send('Telegram bot is running!');
     });
 
-    let bot;
-    
-    // Initialize bot based on environment
+    const bot = new Telegraf(config.TELEGRAM_BOT_TOKEN);
+
+    // Command handlers
+    bot.command('start', (ctx) => handleStart(ctx));
+    bot.on('callback_query', (ctx) => handleCallback(ctx));
+
     if (config.NODE_ENV === 'production') {
       // Webhook mode for production
-      bot = new TelegramBot(config.TELEGRAM_BOT_TOKEN, {
-        webHook: { port: config.PORT }
-      });
-      
       const webhookUrl = `${config.WEBHOOK_URL}/bot${config.TELEGRAM_BOT_TOKEN}`;
-      await bot.setWebHook(webhookUrl);
+      await bot.telegram.setWebhook(webhookUrl);
       logger.info(`Webhook set to ${webhookUrl}`);
 
       // Webhook endpoint
-      app.post(`/bot${config.TELEGRAM_BOT_TOKEN}`, (req, res) => {
-        bot.processUpdate(req.body);
-        res.sendStatus(200);
-      });
+      app.use(bot.webhookCallback(`/bot${config.TELEGRAM_BOT_TOKEN}`));
     } else {
       // Polling mode for development
-      bot = new TelegramBot(config.TELEGRAM_BOT_TOKEN, { polling: true });
+      bot.launch();
       logger.info('Bot started polling');
     }
 
-    // Command handlers
-    bot.onText(/\/start/, (msg) => handleStart(bot, msg));
-    bot.on('callback_query', (query) => handleCallback(bot, query));
-
     // Error handlers
-    bot.on('polling_error', (error) => {
-      logger.error('Polling error:', error);
-    });
-
-    bot.on('webhook_error', (error) => {
-      logger.error('Webhook error:', error);
+    bot.catch((err, ctx) => {
+      logger.error('Bot error:', err);
     });
 
     process.on('unhandledRejection', (error) => {
       logger.error('Unhandled rejection:', error);
     });
+
+    // Enable graceful stop
+    process.once('SIGINT', () => bot.stop('SIGINT'));
+    process.once('SIGTERM', () => bot.stop('SIGTERM'));
 
     // Start Express server
     app.listen(config.PORT, () => {

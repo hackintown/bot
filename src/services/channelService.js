@@ -1,11 +1,10 @@
-const TelegramBot = require('node-telegram-bot-api');
 const config = require('../config/config');
 const User = require('../models/User');
 
 class ChannelService {
-  static async verifyChannelMembership(bot, userId) {
+  static async verifyChannelMembership(ctx, userId) {
     try {
-      const chatMember = await bot.getChatMember(config.TELEGRAM_CHANNEL_ID, userId);
+      const chatMember = await ctx.telegram.getChatMember(config.TELEGRAM_CHANNEL_ID, userId);
       const isChannelMember = ['member', 'administrator', 'creator'].includes(chatMember.status);
       
       if (isChannelMember) {
