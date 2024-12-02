@@ -2,21 +2,20 @@ const User = require('../models/User');
 const keyboards = require('../keyboards/keyboards');
 const logger = require('../utils/logger');
 
-async function handleStart(bot, msg) {
+async function handleStart(ctx) {
   try {
-    const userId = msg.from.id;
+    const userId = ctx.from.id;
     
     await User.findOneAndUpdate(
       { telegramId: userId.toString() },
       { 
-        username: msg.from.username,
+        username: ctx.from.username,
         $setOnInsert: { spinsRemaining: 3 }
       },
       { upsert: true, new: true }
     );
 
-    await bot.sendMessage(
-      userId, 
+    await ctx.reply(
       'Welcome to Spin and Win! Click the button to play',
       keyboards.startKeyboard
     );
