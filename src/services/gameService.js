@@ -4,9 +4,19 @@ const constants = require('../utils/constants');
 const logger = require('../utils/logger');
 
 class GameService {
-  static generateSpinResult() {
-    const { MIN_AMOUNT, MAX_AMOUNT } = constants.SPIN_REWARDS;
-    return Math.floor(Math.random() * (MAX_AMOUNT - MIN_AMOUNT + 1)) + MIN_AMOUNT;
+  static generateSpinResult(spinsRemaining, currentWinnings) {
+    const { MIN_AMOUNT, MAX_AMOUNT, TARGET_TOTAL } = constants.SPIN_REWARDS;
+    
+    // Calculate remaining possible winnings to stay within target range
+    const remainingSpins = spinsRemaining - 1;
+    const remainingTarget = TARGET_TOTAL - currentWinnings;
+    const maxPossible = remainingSpins > 0 
+      ? remainingTarget - (MIN_AMOUNT * remainingSpins)
+      : remainingTarget;
+
+    // Generate random amount within controlled range
+    const actualMax = Math.min(MAX_AMOUNT, maxPossible);
+    return Math.floor(Math.random() * (actualMax - MIN_AMOUNT + 1)) + MIN_AMOUNT;
   }
 
   static async handleSpin(ctx, userId) {
@@ -15,30 +25,42 @@ class GameService {
       
       if (!user || user.spinsRemaining <= 0) {
         await ctx.reply(
-          'No spins remaining! Invite friends to earn more!',
+          '❌ No spins remaining!\n\n' +
+          '👥 Invite friends to earn more spins and rewards!',
           keyboards.inviteKeyboard
         );
         return;
       }
 
-      const winAmount = this.generateSpinResult();
+      // Generate win amount based on remaining spins and current winnings
+      const winAmount = this.generateSpinResult(
+        user.spinsRemaining,
+        user.totalWinnings
+      );
+
+      // Update user stats
       user.totalWinnings += winAmount;
       user.spinsRemaining -= 1;
       await user.save();
 
+      // Send appropriate message based on remaining spins
       if (user.spinsRemaining === 0) {
         await ctx.reply(
-          `🎉 You won ₹${winAmount}!\nTotal winnings: ₹${user.totalWinnings}\n\nInvite friends to earn more!`,
+          `🎉 Congratulations! You won ₹${winAmount}!\n\n` +
+          `💰 Total winnings: ₹${user.totalWinnings}\n\n` +
+          '👥 Invite friends to earn more rewards!',
           keyboards.inviteKeyboard
         );
       } else {
         await ctx.reply(
-          `🎉 You won ₹${winAmount}!\nSpins remaining: ${user.spinsRemaining}`,
+          `🎉 You won ₹${winAmount}!\n` +
+          `🎯 Spins remaining: ${user.spinsRemaining}`,
           keyboards.spinKeyboard
         );
       }
     } catch (error) {
       logger.error('Error handling spin:', error);
+      await ctx.reply('Sorry, something went wrong with the spin. Please try again.');
     }
   }
 

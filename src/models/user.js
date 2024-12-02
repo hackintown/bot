@@ -4,9 +4,13 @@ const userSchema = new mongoose.Schema({
   telegramId: {
     type: String,
     required: true,
-    unique: true
+    unique: true,
+    index: true
   },
-  username: String,
+  username: {
+    type: String,
+    sparse: true
+  },
   hasJoinedChannel: {
     type: Boolean,
     default: false
