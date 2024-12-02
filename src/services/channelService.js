@@ -1,12 +1,17 @@
-const config = require('../config/config');
-const User = require('../models/User');
+const config = require("../config/config");
+const User = require("../models/user");
 
 class ChannelService {
   static async verifyChannelMembership(ctx, userId) {
     try {
-      const chatMember = await ctx.telegram.getChatMember(config.TELEGRAM_CHANNEL_ID, userId);
-      const isChannelMember = ['member', 'administrator', 'creator'].includes(chatMember.status);
-      
+      const chatMember = await ctx.telegram.getChatMember(
+        config.TELEGRAM_CHANNEL_ID,
+        userId
+      );
+      const isChannelMember = ["member", "administrator", "creator"].includes(
+        chatMember.status
+      );
+
       if (isChannelMember) {
         await User.findOneAndUpdate(
           { telegramId: userId.toString() },
@@ -14,10 +19,10 @@ class ChannelService {
           { upsert: true }
         );
       }
-      
+
       return isChannelMember;
     } catch (error) {
-      console.error('Error verifying channel membership:', error);
+      console.error("Error verifying channel membership:", error);
       return false;
     }
   }
