@@ -14,30 +14,38 @@ async function startServer() {
     const app = express();
     app.use(express.json());
 
-    // Health check endpoint for Render
+    // Health check endpoint
     app.get('/', (req, res) => {
       res.send('Telegram bot is running!');
     });
 
-    // Initialize bot with webhook
-    const bot = new TelegramBot(config.TELEGRAM_BOT_TOKEN, { 
-      webHook: { 
-        port: config.PORT 
-      } 
-    });
+    let bot;
+    
+    // Initialize bot based on environment
+    if (config.NODE_ENV === 'production') {
+      // Webhook mode for production
+      bot = new TelegramBot(config.TELEGRAM_BOT_TOKEN, {
+        webHook: { port: config.PORT }
+      });
+      
+      const webhookUrl = `${config.WEBHOOK_URL}/bot${config.TELEGRAM_BOT_TOKEN}`;
+      await bot.setWebHook(webhookUrl);
+      logger.info(`Webhook set to ${webhookUrl}`);
 
-    await bot.setWebHook(`${config.WEBHOOK_URL}/bot${config.TELEGRAM_BOT_TOKEN}`);
-    logger.info('Webhook set successfully');
+      // Webhook endpoint
+      app.post(`/bot${config.TELEGRAM_BOT_TOKEN}`, (req, res) => {
+        bot.processUpdate(req.body);
+        res.sendStatus(200);
+      });
+    } else {
+      // Polling mode for development
+      bot = new TelegramBot(config.TELEGRAM_BOT_TOKEN, { polling: true });
+      logger.info('Bot started polling');
+    }
 
     // Command handlers
     bot.onText(/\/start/, (msg) => handleStart(bot, msg));
     bot.on('callback_query', (query) => handleCallback(bot, query));
-
-    // Webhook endpoint
-    app.post(`/bot${config.TELEGRAM_BOT_TOKEN}`, (req, res) => {
-      bot.processUpdate(req.body);
-      res.sendStatus(200);
-    });
 
     // Error handlers
     bot.on('polling_error', (error) => {

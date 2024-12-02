@@ -8,10 +8,18 @@ function validateEnv() {
     'WEBHOOK_URL'
   ];
 
-  const missingEnvVars = requiredEnvVars.filter(envVar => !process.env[envVar]);
+  for (const envVar of requiredEnvVars) {
+    if (!process.env[envVar]) {
+      const errorMessage = `Missing required environment variable: ${envVar}`;
+      logger.error(errorMessage);
+      throw new Error(errorMessage);
+    }
+  }
 
-  if (missingEnvVars.length > 0) {
-    const errorMessage = `Missing required environment variables: ${missingEnvVars.join(', ')}`;
+  // Validate PORT
+  const port = process.env.PORT || 3000;
+  if (isNaN(port)) {
+    const errorMessage = 'PORT must be a number';
     logger.error(errorMessage);
     throw new Error(errorMessage);
   }

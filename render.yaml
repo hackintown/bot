@@ -2,9 +2,15 @@ services:
   - type: web
     name: telegram-spin-bot
     env: node
+    plan: free
     buildCommand: npm install
     startCommand: npm start
+    autoDeploy: true
     envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 443
       - key: TELEGRAM_BOT_TOKEN
         sync: false
       - key: TELEGRAM_CHANNEL_ID
@@ -13,3 +19,8 @@ services:
         sync: false
       - key: WEBHOOK_URL
         sync: false
+    healthCheckPath: /
+    disk:
+      name: tmp
+      mountPath: /tmp
+      sizeGB: 0.5

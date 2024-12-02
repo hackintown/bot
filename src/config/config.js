@@ -8,7 +8,7 @@ const config = {
   TELEGRAM_CHANNEL_ID: process.env.TELEGRAM_CHANNEL_ID,
   MONGODB_URI: process.env.MONGODB_URI,
   WEBHOOK_URL: process.env.WEBHOOK_URL,
-  PORT: process.env.PORT || 3000,
+  PORT: process.env.NODE_ENV === 'production' ? 443 : 3000,
   NODE_ENV: process.env.NODE_ENV || 'development'
 };
 
