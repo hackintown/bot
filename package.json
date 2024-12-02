@@ -6,6 +6,7 @@
     "start": "node src/index.js",
     "dev": "nodemon src/index.js",
     "build": "npm install",
+    "postinstall": "npm rebuild",
     "fix-index": "node src/scripts/fixEmailIndex.js"
   },
   "dependencies": {
