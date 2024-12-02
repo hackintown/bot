@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: telegram-spin-bot
+    env: node
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: TELEGRAM_BOT_TOKEN
+        sync: false
+      - key: TELEGRAM_CHANNEL_ID
+        sync: false
+      - key: MONGODB_URI
+        sync: false
+      - key: WEBHOOK_URL
+        sync: false
