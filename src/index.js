@@ -16,7 +16,9 @@ async function startServer() {
 
     // Health check endpoint
     app.get("/", (req, res) => {
-      res.send("Telegram bot is running!");
+      res
+        .status(200)
+        .json({ status: "ok", message: "Telegram bot is running!" });
     });
 
     const bot = new Telegraf(config.TELEGRAM_BOT_TOKEN);
@@ -25,17 +27,21 @@ async function startServer() {
     bot.command("start", (ctx) => handleStart(ctx));
     bot.on("callback_query", (ctx) => handleCallback(ctx));
 
+    // Initialize bot based on environment
+    let botInstance = null;
+
     if (config.NODE_ENV === "production") {
       // Webhook mode for production
       const webhookPath = `/webhook/${config.TELEGRAM_BOT_TOKEN}`;
       const webhookUrl = `${config.WEBHOOK_URL}${webhookPath}`;
+
       await bot.telegram.setWebhook(webhookUrl);
       app.use(webhookPath, (req, res) => bot.handleUpdate(req.body, res));
       logger.info(`Webhook set to ${webhookUrl}`);
     } else {
       // Polling mode for development
-      await bot.launch();
-      logger.info("Bot started polling");
+      botInstance = await bot.launch();
+      logger.info("Bot started in polling mode");
     }
 
     // Error handlers
@@ -48,12 +54,31 @@ async function startServer() {
     });
 
     // Enable graceful stop
-    process.once("SIGINT", () => bot.stop("SIGINT"));
-    process.once("SIGTERM", () => bot.stop("SIGTERM"));
+    process.once("SIGINT", async () => {
+      logger.info("SIGINT received. Shutting down gracefully...");
+      if (config.NODE_ENV === "production") {
+        await bot.telegram.deleteWebhook();
+      } else if (botInstance) {
+        await bot.stop();
+      }
+      process.exit(0);
+    });
+
+    process.once("SIGTERM", async () => {
+      logger.info("SIGTERM received. Shutting down gracefully...");
+      if (config.NODE_ENV === "production") {
+        await bot.telegram.deleteWebhook();
+      } else if (botInstance) {
+        await bot.stop();
+      }
+      process.exit(0);
+    });
 
     // Start Express server
-    app.listen(config.PORT, () => {
-      logger.info(`Server is running on port ${config.PORT}`);
+    const PORT =
+      config.NODE_ENV === "production" ? process.env.PORT || 3000 : 3000;
+    app.listen(PORT, () => {
+      logger.info(`Server is running on port ${PORT}`);
     });
   } catch (error) {
     logger.error("Failed to start server:", error);
