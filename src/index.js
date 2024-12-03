@@ -27,15 +27,14 @@ async function startServer() {
 
     if (config.NODE_ENV === "production") {
       // Webhook mode for production
-      const webhookUrl = `${config.WEBHOOK_URL}/bot${config.TELEGRAM_BOT_TOKEN}`;
+      const webhookPath = `/webhook/${config.TELEGRAM_BOT_TOKEN}`;
+      const webhookUrl = `${config.WEBHOOK_URL}${webhookPath}`;
       await bot.telegram.setWebhook(webhookUrl);
+      app.use(webhookPath, (req, res) => bot.handleUpdate(req.body, res));
       logger.info(`Webhook set to ${webhookUrl}`);
-
-      // Webhook endpoint
-      app.use(bot.webhookCallback(`/bot${config.TELEGRAM_BOT_TOKEN}`));
     } else {
       // Polling mode for development
-      bot.launch();
+      await bot.launch();
       logger.info("Bot started polling");
     }
 
