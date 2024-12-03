@@ -9,18 +9,17 @@ services:
     envVars:
       - key: NODE_ENV
         value: production
-      - key: PORT
-        value: 443
       - key: TELEGRAM_BOT_TOKEN
-        sync: false
+        sync: false      # Make sure to set this in Render dashboard
       - key: TELEGRAM_CHANNEL_ID
-        sync: false
+        sync: false      # Make sure to set this in Render dashboard
       - key: MONGODB_URI
-        sync: false
+        sync: false      # Make sure to set this in Render dashboard
       - key: WEBHOOK_URL
-        sync: false
-    healthCheckPath: /
+        sync: false      # Make sure to set this in Render dashboard
+    healthCheckPath: /   # Ensure you have a health check endpoint in your app
     disk:
       name: tmp
       mountPath: /tmp
       sizeGB: 0.5
+    runtime: node20
